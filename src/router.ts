@@ -56,11 +56,13 @@ function sendError(data:RouteErrorHandlerProps, sendHtml = true){
         statusText: data.statusText,
     })
 }
-export function templ(uri: `/${string}`,content:string){
-    const template = Handlebars.compile(content);
+export type TemplateContext = Record<string,unknown>;
+export function templ(uri: `/${string}`,content:string|Handlebars.TemplateDelegate, data:TemplateContext|(() => TemplateContext) = {}) {
+    const template = content instanceof Function ? content :Handlebars.compile(content);
     return get(uri, 
         (req,groups) => {
-            const compiled = template({request:req,groups:groups,test:Math.random() * 1000});
+            const context = typeof data == "function" ? data() : data;
+            const compiled = template({request:req,groups:groups,...context});
             return new Response(
                 compiled,
                 {

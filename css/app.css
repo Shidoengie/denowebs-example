@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components{
+    .page-container{
+        @apply 
+            flex 
+            flex-col 
+            w-screen 
+            h-screen
+            p-6;
+        @apply
+          dark:bg-neutral-900 
+          dark:text-neutral-50;
+
+    }
+    .btn-primary{
+
+    }
+}
