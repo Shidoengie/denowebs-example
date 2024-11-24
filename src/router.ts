@@ -1,15 +1,20 @@
 import * as mime from "@std/media-types"
 import * as path from "jsr:@std/path";
+import { MimeType } from "./mimetypes.ts";
+import Handlebars from "npm:handlebars"
 export type RouteHandler = (
     request: Request,
     groups: Record<string, string | undefined>,
 ) => Response | Promise<Response>;
+
+export type RouteErrorHandlerProps = { status: number; statusText: string };
+
 export type RouteErrorHandler = (
-    data: { status: number; msg: string },
+    data: RouteErrorHandlerProps
 ) => Response;
 
 const routes: Map<string, RouteHandler> = new Map();
-const errorPage: RouteErrorHandler = (data) => {
+export const errorPage: RouteErrorHandler = (data) => {
     const content = /*html*/ `
 <!DOCTYPE html>
 <html lang="en">
@@ -21,13 +26,13 @@ const errorPage: RouteErrorHandler = (data) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Error: ${data.status}</title>
     <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
     <div class="flex w-screen h-screen dark:bg-neutral-900 items-center justify-center">
         <p class="dark:text-white text-lg" id="error-msg">
-            Error: ${data.status} ${data.msg}
+            Error: ${data.status} ${data.statusText}
         </p>
     </div>
 </body>
@@ -35,12 +40,38 @@ const errorPage: RouteErrorHandler = (data) => {
         `;
     return new Response(content, {
         headers: {
-            "content-type": "text/html",
+            "content-type": MimeType.Html,
         },
         status: data.status,
-        statusText: data.msg,
+        statusText: data.statusText,
     });
 };
+
+function sendError(data:RouteErrorHandlerProps, sendHtml = true){
+    if(sendHtml) {
+        return errorPage(data);
+    }
+    return new Response(data.statusText, {
+        status: data.status,
+        statusText: data.statusText,
+    })
+}
+export function templ(uri: `/${string}`,content:string){
+    const template = Handlebars.compile(content);
+    return get(uri, 
+        (req,groups) => {
+            const compiled = template({request:req,groups:groups,test:Math.random() * 1000});
+            return new Response(
+                compiled,
+                {
+                    headers:{
+                        "content-type":MimeType.Html
+                    }
+                }
+            )
+        }
+    )
+}
 export function get(uri: `/${string}`, content: string | RouteHandler) {
     if (typeof content == "string") {
         routes.set(uri, () => {
@@ -59,34 +90,29 @@ export function get(uri: `/${string}`, content: string | RouteHandler) {
     }
     routes.set(uri, content);
 }
+const error404 = (sendHtml:boolean = true) => sendError({ statusText: "Not Found", status: 404 },sendHtml);
+const error500 = (sendHtml:boolean = true) => sendError({ statusText: "Not Found", status: 404 },sendHtml);
 
-async function serve(request: Request,options:{sendHtml?:boolean} = {}): Promise<Response> {
+export async function serve(request: Request,options:{sendHtml?:boolean} = {}): Promise<Response> {
     const route = new URL(request.url).pathname;
-    const type = mime.contentType(path.extname(route));
-    if(type === undefined){
-        return new Response(
-            "Error 404 Not Found",
-            { status: 404, statusText: "Not Found" }
-        );
-    }
 
-    if (type == "text/html") {
+    const type = mime.contentType(path.extname(route)) ?? MimeType.Html;
+    if (type == MimeType.Html) {
         const handler = routes.get(route);
         if (handler === undefined) {
-            return errorPage({ msg: "Not Found", status: 404 });
+            return error404(options.sendHtml);
         }
         const routePattern = new URLPattern({ pathname: route }).exec(
             request.url,
         );
         if (routePattern === null) {
-            return errorPage({ msg: "Not Found", status: 404 });
+            return error404();
         }
         return handler(request, routePattern.pathname.groups);
     }
     try {
         const routePath = "./pub" + route;
         const file = await Deno.open(routePath);
-
 
         return new Response(file.readable, {
             headers: {
@@ -97,11 +123,12 @@ async function serve(request: Request,options:{sendHtml?:boolean} = {}): Promise
 
         if (ex instanceof Deno.errors.NotFound) {
 
-            return errorPage({ status: 404, msg: "Not Found" });
+            return error404(options.sendHtml);
         }
-        return errorPage({
-            status: 500,
-            msg: `Internal Server Error: ${err.message}`,
-        });
+        if(ex instanceof Error)
+        {
+            return error500(options.sendHtml)
+        }
+        return error500(options.sendHtml)
     }
 }

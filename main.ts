@@ -1,8 +1,17 @@
-export function add(a: number, b: number): number {
-  return a + b;
+import * as router from "./src/router.ts"
+import Handlebars from "npm:handlebars"
+import { registerPartials } from "./src/templates.ts";
+if (!import.meta.main) {
+  throw new Error("cannot be used as library");
 }
-
-// Learn more at https://docs.deno.com/runtime/manual/examples/module_metadata#concepts
-if (import.meta.main) {
-  console.log("Add 2 + 3 =", add(2, 3));
-}
+registerPartials("./partials");
+router.templ("/",
+  /*html*/`
+    <p> 
+      {{>test}}
+    </p>
+  `
+);
+Deno.serve((req) => {
+  return router.serve(req,{sendHtml:true});
+});
