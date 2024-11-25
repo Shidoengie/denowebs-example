@@ -1,15 +1,14 @@
 {
 	"tasks": {
-		"dev": "deno run --watch main.ts"
+		"dev": "deno run --watch main.ts",
+		"serve": "deno run --allow-net --allow-read main.ts"
 	},
+
 	"imports": {
 		"@std/assert": "jsr:@std/assert@1",
 		"@std/media-types": "jsr:@std/media-types@^1.1.0",
 		"@std/path": "jsr:@std/path@^1.0.8",
 		"handlebars": "npm:handlebars@^4.7.8",
 		"tailwind": "npm:tailwind@^4.0.0"
-	},
-	"compilerOptions": {
-		"experimentalDecorators": true
 	}
 }
