@@ -1,7 +1,7 @@
 import Handlebars from "npm:handlebars";
 import config from "../config/paths.json" with { type: "json" };
-const views = config?.views ?? "./views";
-const partials = config?.views ?? "./partials";
+const views = config?.views ?? "./app/views";
+const partials = config?.partials ?? "./app/partials";
 export async function registerPartials(folderPath:string){
     for await (const file of Deno.readDir(folderPath)) {
         const partialName = file.name.replace(".hbs","");
@@ -15,6 +15,11 @@ export async function registerPartials(folderPath:string){
         Handlebars.registerPartial(partialName,opened);
     }
 }
+
+export function registerContent() {
+    registerPartials(partials);
+}
+
 /**
  * Gets a view from a root filepath
  */

@@ -1,4 +1,5 @@
 {
-	"views": "./views",
-	"partials": "./partials"
+	"views": "./app/views",
+	"partials": "./app/partials",
+	"resources": "./pub"
 }
