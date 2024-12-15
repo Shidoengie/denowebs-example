@@ -133,3 +133,7 @@ dist
 
 .idea
 tailwindcss.exe
+
+#build ouput
+/pub/scripts/*
+/pub/css/*

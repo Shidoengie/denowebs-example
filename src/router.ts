@@ -50,6 +50,8 @@ function sendError(data: RouteErrorHandlerProps, sendHtml = true) {
   });
 }
 export type TemplateContext = Record<string, unknown>;
+
+
 export function templ(
   uri: `/${string}`,
   content: string | Handlebars.TemplateDelegate,
@@ -70,7 +72,7 @@ export function templ(
 }
 export function get(
   uri: `/${string}`,
-  content: string | RouteHandler,
+  content: string | RouteHandler ,
   type = "text/html",
 ) {
   if (typeof content == "string") {
@@ -95,16 +97,70 @@ export function get(
     },
     handler: content,
   });
+  return
 }
-
 export function post(
-  uri: `/${string}`,
   content: RouteHandler,
+  uri: `/${string}`,
 ) {
+  pattern({ POST: true }, uri, content);
+}
+export function del(
+  content: RouteHandler,
+  uri: `/${string}`,
+) {
+  pattern({ DELETE: true }, uri, content);
+}
+export function put(
+  content: RouteHandler,
+  uri: `/${string}`,
+) {
+  pattern({ PUT: true }, uri, content);
+}
+export function patch(
+  content: RouteHandler,
+  uri: `/${string}`,
+) {
+  pattern({ PATCH: true }, uri, content);
+}
+export function any(
+  uri: `/${string}`,
+
+  content: RouteHandler ,
+) {
+  
   routes.set(uri, {
     accepts: {
-      GET: true,
+      POST:   true,
+      GET:    true,
+      PUT:    true,
+      DELETE: true,
+      PATCH:  true,
     },
+    handler: content,
+  });
+}
+
+export function pattern(
+  accepts: RouteBody["accepts"] | Array<keyof RouteBody["accepts"]>,
+  uri: `/${string}`,
+  content: RouteHandler ,
+) {
+  if(accepts instanceof Array){
+    routes.set(uri, {
+      accepts: {
+        POST: accepts.includes("POST"),
+        GET: accepts.includes("GET"),
+        PUT: accepts.includes("PUT"),
+        DELETE: accepts.includes("DELETE"),
+        PATCH: accepts.includes("PATCH"),
+      },
+      handler: content,
+    });
+    return
+  }
+  routes.set(uri, {
+    accepts,
     handler: content,
   });
 }
@@ -115,6 +171,13 @@ const error500 = (sendHtml: boolean = true) =>
   sendError({ statusText: "Internal Error", status: 500 }, sendHtml);
 const error405 = (sendHtml: boolean = true) =>
   sendError({ statusText: "Method not allowed", status: 405 }, sendHtml);
+
+function methodIsInvalid(request:Request,handler:RouteBody):boolean{
+  return (request.method == "GET" && !handler.accepts.GET) || 
+  (request.method == "POST" && !handler.accepts.POST) ||
+  (request.method == "DELETE" && !handler.accepts.DELETE) ||
+  (request.method == "PATCH" && !handler.accepts.PATCH)
+}
 
 export async function serve(
   request: Request,
@@ -127,7 +190,7 @@ export async function serve(
 
   /**
    * Checks if its not a file request if it isnt it will call the handler
-   * This is done so to allow handling of routes while also allowing resources to be
+   * This is done so to allow handling of routes while also allowing resources to be acessed
    */
   if (type === undefined) {
     const handler = routes.get(route);
@@ -138,19 +201,7 @@ export async function serve(
     if (routePattern === null) {
       return error404(sendHtmlError);
     }
-    if (request.method == "GET" && !handler.accepts.GET) {
-      return error405(sendHtmlError);
-    }
-    if (request.method == "POST" && !handler.accepts.POST) {
-      return error405(sendHtmlError);
-    }
-    if (request.method == "DELETE" && !handler.accepts.DELETE) {
-      return error405(sendHtmlError);
-    }
-    if (request.method == "PUT" && !handler.accepts.PUT) {
-      return error405(sendHtmlError);
-    }
-    if (request.method == "PATCH" && !handler.accepts.PATCH) {
+    if (methodIsInvalid(request,handler)) {
       return error405(sendHtmlError);
     }
     return handler.handler(request, routePattern.pathname.groups);
