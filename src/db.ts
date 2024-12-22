@@ -7,12 +7,6 @@ const clientInfo:ClientOptions = {
     user:Deno.env.get("DB_USER"),
     hostname:Deno.env.get("DB_HOST"),
 }
-console.log(clientInfo)
 
 export const db = new Client(clientInfo)
 
-export async function test() {
-    await db.connect();
-    console.log(await db.queryArray`SELECT * FROM test`);
-}
-test()

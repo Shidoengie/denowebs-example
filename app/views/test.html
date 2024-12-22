@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title></title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap"
+			rel="stylesheet"
+		/>
+		<link rel="stylesheet" href="../../pub/css/app.css" />
+		<script src="https://cdn.tailwindcss.com"></script>
+		<script
+			defer
+			src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+		></script>
+		<style type="text/tailwindcss">
+			.ring-border {
+				@apply border border-solid border-white border-opacity-20;
+			}
+			.inp {
+				@apply bg-neutral-800 rounded-md ring-border py-1 px-2 focus:border-blue-400;
+				outline: none;
+			}
+			.form-container {
+				@apply flex flex-col py-6 px-6 bg-neutral-700 rounded-md ring-border w-full max-w-md gap-4;
+			}
+			.title {
+				font-family: "Fira Code", "Courier New", Courier, monospace;
+				font-size: x-large;
+			}
+			.btn {
+				@apply bg-green-600 py-1 px-4 rounded-md ring-border border-green-200 hover:border-opacity-50 active:border-opacity-20 active:bg-green-700;
+				font-family: "Fira Code", "Courier New", Courier, monospace;
+			}
+		</style>
+	</head>
+	<body>
+		<div
+			class="flex w-screen h-screen bg-neutral-800 items-center justify-center text-white"
+		>
+			<div class="form-container">
+				<h1 class="title">Login</h1>
+				<form class="flex flex-col gap-2">
+					<input name="username" class="inp" />
+					<input name="password" class="inp" />
+				</form>
+				<div>
+					<button class="btn">Login</button>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

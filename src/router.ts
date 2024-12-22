@@ -147,6 +147,9 @@ export function pattern(
   content: RouteHandler ,
 ) {
   if(accepts instanceof Array){
+    if(accepts.length === 0){
+      throw new TypeError("The method array must not be empty")
+    }
     routes.set(uri, {
       accepts: {
         POST: accepts.includes("POST"),
@@ -179,11 +182,24 @@ function methodIsInvalid(request:Request,handler:RouteBody):boolean{
   (request.method == "PATCH" && !handler.accepts.PATCH)
 }
 
+function searchValidRoutes(url:string):{handler:RouteBody,routePattern:URLPatternResult} | null{
+  for (const [route,handler] of routes.entries()) {
+     
+      const pattern = new URLPattern({ pathname: route });
+      const valid = pattern.test(url);
+      if(valid){
+        return {handler, routePattern:pattern.exec(url)!}
+      }
+  }
+  return null;
+}
+
 export async function serve(
   request: Request,
 ): Promise<Response> {
+  
   const route = new URL(request.url).pathname;
-
+ 
   const type = mime.contentType(path.extname(route));
 
   const sendHtmlError = request.headers.get("Accept")?.includes(MimeType.Html);
@@ -193,14 +209,12 @@ export async function serve(
    * This is done so to allow handling of routes while also allowing resources to be acessed
    */
   if (type === undefined) {
-    const handler = routes.get(route);
-    if (handler === undefined) {
+
+    const query = searchValidRoutes(request.url)
+    if (query === null) {
       return error404(sendHtmlError);
     }
-    const routePattern = new URLPattern({ pathname: route }).exec(request.url);
-    if (routePattern === null) {
-      return error404(sendHtmlError);
-    }
+    const {handler,routePattern} = query;
     if (methodIsInvalid(request,handler)) {
       return error405(sendHtmlError);
     }

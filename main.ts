@@ -5,7 +5,7 @@ import { MimeType } from "./src/mimetypes.ts"
 if (!import.meta.main) {
   throw new Error("cannot be used as library");
 }
-registerContent();
+
 
 view("/error.hbs").then((view) => router.setErrorPage(view));
 
@@ -14,14 +14,17 @@ view("/view.hbs").then((view) =>
     test: Math.random() * 10000,
   }))
 );
-router.any("/test",()=>{
-  return new Response("this is a test", {
+router.any("/test/",(req,groups)=>{
+  const params = new URL(req.url).searchParams;
+  let buffer = JSON.stringify(Array.from(params.entries()))
+  return new Response(buffer, {
     headers: {
-      "content-type": MimeType.Text,
+      "content-type": MimeType.Json,
       
     }
   })
 })
 Deno.serve((req) => {
+  registerContent();
   return router.serve(req);
 });

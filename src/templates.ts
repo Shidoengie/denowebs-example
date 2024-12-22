@@ -9,8 +9,6 @@ export async function registerPartials(folderPath:string){
             folderPath += "/";
         }
         const partialPath = folderPath + file.name;
-        console.log(partialPath);
-        console.log(partialName);
         const opened = await Deno.readTextFile(partialPath);
         Handlebars.registerPartial(partialName,opened);
     }
