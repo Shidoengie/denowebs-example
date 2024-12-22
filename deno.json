@@ -1,7 +1,7 @@
 {
 	"tasks": {
 		"dev": "deno run --watch --allow-env --allow-net --allow-read main.ts -o ./pub/css/app.css & deno run tailwind & deno run esbuild",
-		"tailwind": "deno run -A npm:tailwindcss -i ./app/css/app.css --minify --watch",
+		"tailwind": "deno run -A npm:tailwindcss -i ./app/css/app.css -o ./pub/css/app.css  --minify --watch",
 		"esbuild": "deno run -A npm:esbuild --watch --minify ./app/scripts/main.ts --outdir=./pub/scripts/ ",
 		"serve": "deno run --allow-net --allow-env --allow-read main.ts & deno run -A npm:tailwindcss -i ./app/css/app.css --minify & deno run -A npm:esbuild --minify ./app/scripts/main.ts --outdir=./pub/scripts/"
 	},

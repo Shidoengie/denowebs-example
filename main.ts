@@ -6,7 +6,6 @@ if (!import.meta.main) {
   throw new Error("cannot be used as library");
 }
 
-
 view("/error.hbs").then((view) => router.setErrorPage(view));
 
 view("/view.hbs").then((view) =>
@@ -26,5 +25,6 @@ router.any("/test/",(req,groups)=>{
 })
 Deno.serve((req) => {
   registerContent();
+
   return router.serve(req);
 });

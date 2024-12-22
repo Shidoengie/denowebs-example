@@ -137,3 +137,4 @@ tailwindcss.exe
 #build ouput
 /pub/scripts/*
 /pub/css/*
+pub/css/app.css

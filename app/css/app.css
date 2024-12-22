@@ -15,7 +15,23 @@
           dark:text-neutral-50;
 
     }
-    .btn-primary{
 
+    .ring-border {
+        @apply border border-solid border-white border-opacity-20;
+    }
+    .inp {
+        @apply bg-neutral-800 rounded-md ring-border py-1 px-2 focus:border-blue-400;
+        outline: none;
+    }
+    .form-container {
+        @apply flex flex-col py-6 px-6 bg-neutral-700 rounded-md ring-border w-full max-w-md gap-4;
+    }
+    .title {
+        font-family: "Fira Code", "Courier New", Courier, monospace;
+        font-size: x-large;
+    }
+    .btn-primary {
+        @apply bg-green-600 py-1 px-4 rounded-md border border-solid border-white border-opacity-20 border-green-200 hover:border-opacity-50 active:border-opacity-20 active:bg-green-700;
+        font-family: "Fira Code", "Courier New", Courier, monospace;
     }
 }

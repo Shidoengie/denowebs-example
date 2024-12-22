@@ -1,8 +1,17 @@
 
 {{#> layout }}
-    <div class="flex w-screen h-screen dark:bg-neutral-900 items-center justify-center">
-        <p class="dark:text-white text-lg">
-           hello!
-        </p>
-    </div>
+    <div
+			class="flex w-screen h-screen bg-neutral-800 items-center justify-center text-white px-4"
+		>
+			<div class="form-container">
+				<h1 class="title">Login</h1>
+				<form class="flex flex-col gap-2">
+					<input name="username" class="inp" />
+					<input name="password" class="inp" />
+				</form>
+				<div>
+					<button class="btn-primary">Login</button>
+				</div>
+			</div>
+		</div>
 {{/layout}}
