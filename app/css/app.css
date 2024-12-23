@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+body{
+    font-family: "Fira Code", "Courier New", Courier, monospace;
+    
+}
+
 @layer components{
     .page-container{
         @apply 
@@ -20,7 +25,7 @@
         @apply border border-solid border-white border-opacity-20;
     }
     .inp {
-        @apply bg-neutral-800 rounded-md ring-border py-1 px-2 focus:border-blue-400;
+        @apply bg-neutral-800 rounded-md ring-border py-1.5 px-2 focus:border-blue-400;
         outline: none;
     }
     .form-container {
