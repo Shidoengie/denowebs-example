@@ -8,9 +8,22 @@ if (!import.meta.main) {
 async function getRoutes() {
   const [error,home] = await Promise.all([view("/error.hbs"),view("/view.hbs")])
   router.setErrorPage(error)
-  router.templ("/", home, () => ({
-    test: Math.random() * 10000,
-  }))
+
+  router.obj("/",{
+    GET() {
+      return new Response(home({}), {
+        headers: {
+          "content-type": MimeType.Html,
+
+        },
+      });
+    },
+    async POST(request){
+      const formData = await request.formData();
+
+      return new Response(JSON.stringify(Object.fromEntries(formData)), {headers:{"content-type": MimeType.Json}});
+    }
+  });
   router.any("/test/",(req,groups) => {
     const params = new URL(req.url).searchParams;
     let buffer = JSON.stringify(Array.from(params.entries()))

@@ -51,16 +51,18 @@ function sendError(data: RouteErrorHandlerProps, sendHtml = true) {
 }
 export type TemplateContext = Record<string, unknown>;
 
-
 export function templ(
   uri: `/${string}`,
   content: string | Handlebars.TemplateDelegate,
   data: TemplateContext | (() => TemplateContext) = {},
+  accepts: RouteBody["accepts"] | Array<keyof RouteBody["accepts"]> = {
+    GET: true,
+  },
 ) {
   const template = content instanceof Function
     ? content
     : Handlebars.compile(content);
-  return get(uri, (req, groups) => {
+  return pattern(accepts, uri, (req, groups) => {
     const context = typeof data == "function" ? data() : data;
     const compiled = template({ request: req, groups: groups, ...context });
     return new Response(compiled, {
@@ -72,7 +74,7 @@ export function templ(
 }
 export function get(
   uri: `/${string}`,
-  content: string | RouteHandler ,
+  content: string | RouteHandler,
   type = "text/html",
 ) {
   if (typeof content == "string") {
@@ -97,7 +99,7 @@ export function get(
     },
     handler: content,
   });
-  return
+  return;
 }
 export function post(
   content: RouteHandler,
@@ -125,30 +127,66 @@ export function patch(
 }
 export function any(
   uri: `/${string}`,
-
-  content: RouteHandler ,
+  content: RouteHandler,
 ) {
-  
   routes.set(uri, {
     accepts: {
-      POST:   true,
-      GET:    true,
-      PUT:    true,
+      POST: true,
+      GET: true,
+      PUT: true,
       DELETE: true,
-      PATCH:  true,
+      PATCH: true,
     },
     handler: content,
   });
 }
-
+export function obj(
+  uri: `/${string}`,
+  content: {
+    POST?: RouteHandler;
+    GET?: RouteHandler;
+    PATCH?: RouteHandler;
+    DELETE?: RouteHandler;
+    PUT?: RouteHandler;
+  },
+) {
+  routes.set(uri, {
+    accepts: {
+      POST: content.POST !== undefined,
+      GET: content.GET !== undefined,
+      PUT: content.PUT !== undefined,
+      DELETE: content.DELETE !== undefined,
+      PATCH: content.PATCH !== undefined,
+    },
+    handler: (request, groups) => {
+      switch (request.method) {
+        case "POST":
+          return content.POST!(request, groups);
+        case "DELETE":
+          return content.DELETE!(request, groups);
+        case "PATCH":
+          return content.PATCH!(request, groups);
+        case "GET":
+          return content.GET!(request, groups);
+        case "PUT":
+          return content.PUT!(request, groups);
+        default:
+          return new Response(null, {
+            status: 405,
+            statusText: "Method not allowed",
+          });
+      }
+    },
+  });
+}
 export function pattern(
   accepts: RouteBody["accepts"] | Array<keyof RouteBody["accepts"]>,
   uri: `/${string}`,
-  content: RouteHandler ,
+  content: RouteHandler,
 ) {
-  if(accepts instanceof Array){
-    if(accepts.length === 0){
-      throw new TypeError("The method array must not be empty")
+  if (accepts instanceof Array) {
+    if (accepts.length === 0) {
+      throw new TypeError("The method array must not be empty");
     }
     routes.set(uri, {
       accepts: {
@@ -160,7 +198,7 @@ export function pattern(
       },
       handler: content,
     });
-    return
+    return;
   }
   routes.set(uri, {
     accepts,
@@ -175,21 +213,22 @@ const error500 = (sendHtml: boolean = true) =>
 const error405 = (sendHtml: boolean = true) =>
   sendError({ statusText: "Method not allowed", status: 405 }, sendHtml);
 
-function methodIsInvalid(request:Request,handler:RouteBody):boolean{
-  return (request.method == "GET" && !handler.accepts.GET) || 
-  (request.method == "POST" && !handler.accepts.POST) ||
-  (request.method == "DELETE" && !handler.accepts.DELETE) ||
-  (request.method == "PATCH" && !handler.accepts.PATCH)
+function methodIsInvalid(request: Request, handler: RouteBody): boolean {
+  return (request.method == "GET" && !handler.accepts.GET) ||
+    (request.method == "POST" && !handler.accepts.POST) ||
+    (request.method == "DELETE" && !handler.accepts.DELETE) ||
+    (request.method == "PATCH" && !handler.accepts.PATCH);
 }
 
-function searchValidRoutes(url:string):{handler:RouteBody,routePattern:URLPatternResult} | null{
-  for (const [route,handler] of routes.entries()) {
-     
-      const pattern = new URLPattern({ pathname: route });
-      const valid = pattern.test(url);
-      if(valid){
-        return {handler, routePattern:pattern.exec(url)!}
-      }
+function searchValidRoutes(
+  url: string,
+): { handler: RouteBody; routePattern: URLPatternResult } | null {
+  for (const [route, handler] of routes.entries()) {
+    const pattern = new URLPattern({ pathname: route });
+    const valid = pattern.test(url);
+    if (valid) {
+      return { handler, routePattern: pattern.exec(url)! };
+    }
   }
   return null;
 }
@@ -197,9 +236,8 @@ function searchValidRoutes(url:string):{handler:RouteBody,routePattern:URLPatter
 export async function serve(
   request: Request,
 ): Promise<Response> {
-  
   const route = new URL(request.url).pathname;
- 
+
   const type = mime.contentType(path.extname(route));
 
   const sendHtmlError = request.headers.get("Accept")?.includes(MimeType.Html);
@@ -209,13 +247,12 @@ export async function serve(
    * This is done so to allow handling of routes while also allowing resources to be acessed
    */
   if (type === undefined) {
-
-    const query = searchValidRoutes(request.url)
+    const query = searchValidRoutes(request.url);
     if (query === null) {
       return error404(sendHtmlError);
     }
-    const {handler,routePattern} = query;
-    if (methodIsInvalid(request,handler)) {
+    const { handler, routePattern } = query;
+    if (methodIsInvalid(request, handler)) {
       return error405(sendHtmlError);
     }
     return handler.handler(request, routePattern.pathname.groups);

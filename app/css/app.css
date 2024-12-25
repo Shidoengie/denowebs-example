@@ -2,9 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-body{
+body {
     font-family: "Fira Code", "Courier New", Courier, monospace;
-    
 }
 
 @layer components{
