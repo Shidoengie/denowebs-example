@@ -1,5 +1,6 @@
 {
 	"views": "./app/views",
 	"partials": "./app/partials",
-	"resources": "./pub"
+	"resources": "./pub",
+	"migrations": "./db"
 }

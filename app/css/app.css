@@ -35,7 +35,17 @@ body {
         font-size: x-large;
     }
     .btn-primary {
-        @apply bg-green-600 py-1 px-4 rounded-md border border-solid border-white border-opacity-20 border-green-200 hover:border-opacity-50 active:border-opacity-20 active:bg-green-700;
+        @apply bg-green-600 py-1 px-4 rounded-md;
+        @apply border border-solid border-opacity-50 border-green-200;
         font-family: "Fira Code", "Courier New", Courier, monospace;
+        &:active {
+            @apply border-opacity-50 bg-green-700;
+        }
+        &:hover {
+            @apply border-opacity-80;
+        }
+        &:active:hover {
+            @apply border-opacity-50;
+        }
     }
 }
