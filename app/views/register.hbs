@@ -1,0 +1,42 @@
+
+{{#>layout title="NotesApp"}}
+    <script type="module">
+        const form = document.getElementById("login-form");
+        form.addEventListener("submit",event =>{
+            event.preventDefault();
+            const formData = new FormData(form);
+            fetch("/",{
+                method:"POST",
+                body:formData
+            }).then(res => console.log(res.json()));
+        })
+    </script>
+    <div
+			class="flex w-screen h-screen bg-neutral-800 items-center justify-center text-white px-4"
+		>
+			<div class="form-container">
+				<h1 class="title">Login</h1>
+				<form method="post" class="flex flex-col gap-2" id="login-form">
+                    <label for="email">
+                        Email
+                    </label>
+					<input name="email" required class="inp" type="Email" aria-label="email"/>
+					<label for="password">
+                        Password
+                    </label>
+					<div x-data="{passwordVisible:false}" class="w-full relative" >
+                    	<input required name="password" class="inp w-full" :type="passwordVisible ? 'text' : 'password' " autocomplete="current-password"/>
+                        <button type="button" class="absolute top-0 right-0 h-full flex items-center px-2" style="pointer-events: all" @click="passwordVisible = !passwordVisible">
+                            <i :class="passwordVisible ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash'"></i>
+                        </button>
+
+					</div>
+                    <div class="pt-2">
+                        <button class="btn-primary" type="submit">Login</button>
+                    </div>
+
+				</form>
+
+			</div>
+		</div>
+{{/layout}}
