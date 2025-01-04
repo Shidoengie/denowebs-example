@@ -98,14 +98,17 @@ export function templ(
     uri: `/${string}`,
     content: string | Handlebars.TemplateDelegate,
     data: TemplateContext | (() => TemplateContext) = {},
-    accepts: SimpleRoute["accepts"] | Array<keyof SimpleRoute["accepts"]> = {
-      GET: true,
-    },
 ) {
-  const template = content instanceof Function
-      ? content
-      : Handlebars.compile(content);
-  return pattern(accepts, uri, (req, groups) => {
+
+  const template = (()=>{
+    if (content instanceof Function){
+      return content;
+    }
+    return Handlebars.compile(content);
+  })();
+
+
+  return get(uri, (req, groups) => {
     const context = typeof data == "function" ? data() : data;
     const compiled = template({ request: req, groups: groups, ...context });
     return new Response(compiled, {

@@ -21,16 +21,8 @@
                         Email
                     </label>
 					<input name="email" required class="inp" type="Email" aria-label="email"/>
-					<label for="password">
-                        Password
-                    </label>
-					<div x-data="{passwordVisible:false}" class="w-full relative" >
-                    	<input required name="password" class="inp w-full" :type="passwordVisible ? 'text' : 'password' " autocomplete="current-password"/>
-                        <button type="button" class="absolute top-0 right-0 h-full flex items-center px-2" style="pointer-events: all" @click="passwordVisible = !passwordVisible">
-                            <i :class="passwordVisible ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash'"></i>
-                        </button>
 
-					</div>
+					{{> password-input name="password" title="Password"}}
                     <div class="pt-2">
                         <button class="btn-primary" type="submit">Login</button>
                     </div>

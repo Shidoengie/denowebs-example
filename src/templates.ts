@@ -1,4 +1,5 @@
 import Handlebars from "npm:handlebars";
+import type {HelperOptions} from "handlebars";
 import config from "../config/paths.json" with { type: "json" };
 const views = config?.views ?? "./app/views";
 const partials = config?.partials ?? "./app/partials";
@@ -8,6 +9,7 @@ export async function registerPartials(folderPath:string){
         if (!folderPath.endsWith("/")){
             folderPath += "/";
         }
+        console.log(partialName)
         const partialPath = folderPath + file.name;
         const opened = await Deno.readTextFile(partialPath);
         Handlebars.registerPartial(partialName,opened);
