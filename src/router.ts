@@ -8,23 +8,20 @@ export type RouteHandler = (
     request: Request,
     groups: Record<string, string | undefined>,
 ) => Response | Promise<Response>;
-export type Route = SimpleRoute | ObjectRoute
 
-export type ObjectRoute = Partial<Record<HttpMethod,RouteHandler>>
-export interface SimpleRoute {
+export interface Route  {
+  uri:string;
   accepts: Partial<Record<HttpMethod,boolean>>
   handler: RouteHandler;
 }
 
 
-// deno-lint-ignore no-explicit-any
-export const isSimpleRoute = (x:any): x is SimpleRoute => "accepts" in x && "handler" in x;
 
 export type RouteErrorHandlerProps = { status: number; statusText: string };
 
 export type RouteErrorHandler = (data: RouteErrorHandlerProps) => Response;
 
-const routes: Map<string, Route> = new Map();
+const routes: Route[] = [];
 
 let errorPage: RouteErrorHandler | null = null;
 
@@ -40,46 +37,37 @@ export function setErrorPage(template: HandlebarsTemplateDelegate) {
     });
   };
 }
-
+function searchValidRoutes(
+    uri: string,
+    method:HttpMethod,
+): { handler: RouteHandler; routePattern: URLPatternResult} | null {
+  for (const route of routes) {
+    const pattern = new URLPattern({ pathname: route.uri });
+    const valid = pattern.test(uri);
+    if (!valid) {
+      continue;
+    }
+    if(methodIsInvalid(method,route)){
+      continue
+    }
+    return { handler:route.handler, routePattern: pattern.exec(uri)! };
+  }
+  return null;
+}
 function setSingleRoute(
     accepts: HttpMethod,
     uri: `/${string}`,
     content: RouteHandler,
 ) {
-  const existentRoute = routes.get(uri);
-  function getAcceptArr(route:SimpleRoute) {
-    const arr:HttpMethod[] = [];
-    for (const routeKey in route.accepts) {
-      if(route.accepts[routeKey as HttpMethod]){
-        arr.push(routeKey as HttpMethod);
-      }
-    }
-    return arr;
-  }
-  if(!existentRoute) {
-    const newRoute:SimpleRoute = {accepts:{},handler:content};
-    newRoute.accepts[accepts] = true;
-    routes.set(uri, newRoute);
-    return
-  }
-  if(isSimpleRoute(existentRoute)) {
-    const arr = getAcceptArr(existentRoute);
-    if(arr.length > 2){
-      console.warn("Tried overriding a simple route")
-      const newRoute:SimpleRoute = {accepts:{},handler:content};
-      newRoute.accepts[accepts] = true;
-      routes.set(uri, newRoute);
-      return
-    }
-    const newRoute:ObjectRoute = {}
-    newRoute[arr[0]] = existentRoute.handler;
-    newRoute[accepts] = content
-    routes.set(uri, newRoute);
-    return;
-  }
-  existentRoute[accepts] = content;
-  routes.set(uri, existentRoute);
-  return;
+  const existentRoute = searchValidRoutes(uri,accepts);
+  const newRoute:Route = {
+    uri,
+    accepts:{},
+    handler:content
+  };
+  newRoute.accepts[accepts] = true;
+  routes.push(newRoute);
+  return
 
 }
 
@@ -170,7 +158,8 @@ export function any(
     uri: `/${string}`,
     content: RouteHandler,
 ) {
-  routes.set(uri, {
+  routes.push({
+    uri: uri,
     accepts: {
       POST: true,
       GET: true,
@@ -181,14 +170,17 @@ export function any(
     handler: content,
   });
 }
+
 export function obj(
     uri: `/${string}`,
-    content: ObjectRoute,
+    content: Partial<Record<HttpMethod, RouteHandler>>,
 ) {
-  routes.set(uri, content);
+  for (const [method,handler] of Object.entries(content)) {
+    routes.push({uri,accepts:{[method]:true},handler})
+  }
 }
 export function pattern(
-    accepts: SimpleRoute["accepts"] | Array<keyof SimpleRoute["accepts"]>,
+    accepts: Route["accepts"] | Array<keyof Route["accepts"]>,
     uri: `/${string}`,
     content: RouteHandler,
 ) {
@@ -196,7 +188,8 @@ export function pattern(
     if (accepts.length === 0) {
       throw new TypeError("The method array must not be empty");
     }
-    routes.set(uri, {
+    routes.push( {
+      uri,
       accepts: {
         POST: accepts.includes("POST"),
         GET: accepts.includes("GET"),
@@ -208,7 +201,8 @@ export function pattern(
     });
     return;
   }
-  routes.set(uri, {
+  routes.push({
+    uri,
     accepts,
     handler: content,
   });
@@ -221,28 +215,16 @@ const error500 = (sendHtml: boolean = true) =>
 const error405 = (sendHtml: boolean = true) =>
     sendError({ statusText: "Method not allowed", status: 405 }, sendHtml);
 
-function methodIsInvalid(request: Request, handler: SimpleRoute): boolean {
+function methodIsInvalid(method: HttpMethod, handler: Route): boolean {
 
-  return (request.method == "GET" && !handler.accepts.GET) ||
-      (request.method == "POST" && !handler.accepts.POST) ||
-      (request.method == "DELETE" && !handler.accepts.DELETE) ||
-      (request.method == "PATCH" && !handler.accepts.PATCH)||
-      (request.method == "PUT" && !handler.accepts.PUT);
+  return (method == "GET" && !handler.accepts.GET) ||
+      (method == "POST" && !handler.accepts.POST) ||
+      (method == "DELETE" && !handler.accepts.DELETE) ||
+      (method == "PATCH" && !handler.accepts.PATCH)||
+      (method == "PUT" && !handler.accepts.PUT);
 }
 
-function searchValidRoutes(
-    url: string,
-): { handler: Route; routePattern: URLPatternResult, simpleRoute:boolean } | null {
-  for (const [route, handler] of routes.entries()) {
-    const pattern = new URLPattern({ pathname: route });
-    const valid = pattern.test(url);
-    if (valid) {
-      const simpleRoute = isSimpleRoute(handler);
-      return { handler, routePattern: pattern.exec(url)!,simpleRoute };
-    }
-  }
-  return null;
-}
+
 
 export async function serve(
     request: Request,
@@ -253,44 +235,19 @@ export async function serve(
   const type = mime.contentType(path.extname(route));
 
   const sendHtmlError = request.headers.get("Accept")?.includes(MimeType.Html);
-  function handleSimpleRoute(route:SimpleRoute ,routePattern: URLPatternResult) {
-    if (methodIsInvalid(request, route)) {
-      return error405(sendHtmlError);
-    }
-    return route.handler(request, routePattern.pathname.groups);
-  }
-  function handleObjectRoute(route:ObjectRoute ,routePattern: URLPatternResult) {
-    if(request.method == "GET" && route.GET){
-      return route.GET(request, routePattern.pathname.groups);
-    }
-    if(request.method == "POST" && route.POST){
-      return route.POST(request, routePattern.pathname.groups);
-    }
-    if(request.method == "DELETE" && route.DELETE){
-      return route.DELETE(request, routePattern.pathname.groups);
-    }
-    if(request.method == "PATCH" && route.PATCH){
-      return route.PATCH(request, routePattern.pathname.groups);
-    }
-    if(request.method == "PUT" && route.PUT){
-      return route.PUT(request, routePattern.pathname.groups);
-    }
-    return error405(sendHtmlError);
-  }
+
   /**
    * Checks if its not a file request if it isn't it will call the handler
    * This is done so to allow handling of routes while also allowing resources to be acessed
    */
   if (type === undefined) {
-    const query = searchValidRoutes(request.url);
+    const query = searchValidRoutes(request.url,request.method as HttpMethod);
     if (query === null) {
       return error404(sendHtmlError);
     }
-    const { handler, routePattern,simpleRoute } = query;
-    if(simpleRoute) {
-      return handleSimpleRoute(handler as SimpleRoute, routePattern)
-    }
-    return handleObjectRoute(handler as ObjectRoute,routePattern)
+    const { handler, routePattern} = query;
+
+    return handler(request, routePattern.pathname.groups);
   }
   try {
     const routePath = "./pub" + route;
