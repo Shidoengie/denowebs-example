@@ -12,8 +12,10 @@
 		"@std/dotenv": "jsr:@std/dotenv@^0.225.3",
 		"@std/media-types": "jsr:@std/media-types@^1.1.0",
 		"@std/path": "jsr:@std/path@^1.0.8",
+		"@std/testing": "jsr:@std/testing@^1.0.9",
 		"esbuild": "npm:esbuild@^0.24.0",
 		"handlebars": "npm:handlebars@^4.7.8",
-		"tailwind": "npm:tailwind@^4.0.0"
+		"tailwind": "npm:tailwind@^4.0.0",
+		"yargs": "npm:yargs@^17.1.1-candidate.0"
 	}
 }

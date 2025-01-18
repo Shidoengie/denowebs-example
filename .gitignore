@@ -138,3 +138,5 @@ tailwindcss.exe
 /pub/scripts/*
 /pub/css/*
 pub/css/app.css
+
+scratch.ts
